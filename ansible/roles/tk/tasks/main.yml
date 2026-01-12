@@ -1,0 +1,24 @@
+---
+- name: Create opt directory
+  ansible.builtin.file:
+    path: /opt
+    state: directory
+    mode: '0755'
+
+- name: Clone ticket system repository
+  ansible.builtin.git:
+    repo: https://github.com/wedow/ticket.git
+    dest: /opt/ticket
+    version: main
+    update: no
+
+- name: Create tk symlink
+  ansible.builtin.file:
+    src: /opt/ticket/ticket
+    dest: /usr/local/bin/tk
+    state: link
+
+- name: Ensure tk is executable
+  ansible.builtin.file:
+    path: /opt/ticket/ticket
+    mode: '0755'

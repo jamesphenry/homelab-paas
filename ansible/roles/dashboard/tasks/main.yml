@@ -1,0 +1,65 @@
+---
+- name: Create dashboard user
+  ansible.builtin.user:
+    name: dashboard
+    system: true
+    shell: /sbin/nologin
+
+- name: Create dashboard directory
+  ansible.builtin.file:
+    path: /opt/dashboard
+    state: directory
+    owner: dashboard
+    group: dashboard
+    mode: '0755'
+
+- name: Create dashboard config directory
+  ansible.builtin.file:
+    path: /opt/dashboard/config
+    state: directory
+    owner: dashboard
+    group: dashboard
+    mode: '0755'
+
+- name: Create dashboard API directory
+  ansible.builtin.file:
+    path: /opt/dashboard/api
+    state: directory
+    owner: dashboard
+    group: dashboard
+    mode: '0755'
+
+- name: Create dashboard frontend directory
+  ansible.builtin.file:
+    path: /opt/dashboard/frontend
+    state: directory
+    owner: dashboard
+    group: dashboard
+    mode: '0755'
+
+- name: Create dashboard service file
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/dashboard.service
+    content: |
+      [Unit]
+      Description=Dashboard Service
+      After=network.target postgresql.service
+
+      [Service]
+      Type=simple
+      User=dashboard
+      WorkingDirectory=/opt/dashboard
+      ExecStart=/usr/bin/python3 /opt/dashboard/api/main.py
+      Restart=always
+      RestartSec=5
+      Environment="DATABASE_URL=postgresql://dashboard:dashboard123@localhost/homelab_paas"
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Start and enable dashboard service
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: dashboard
+    state: started
+    enabled: true

@@ -1,0 +1,67 @@
+---
+- name: Create Gitea data directory
+  ansible.builtin.file:
+    path: /var/lib/gitea
+    state: directory
+    owner: 1000
+    group: 1000
+    mode: '0755'
+
+- name: Create Gitea config directory
+  ansible.builtin.file:
+    path: /etc/gitea
+    state: directory
+    owner: 1000
+    group: 1000
+    mode: '0755'
+
+- name: Create Gitea Docker network
+  community.docker.docker_network:
+    name: gitea-network
+    state: present
+
+- name: Start Gitea PostgreSQL container
+  community.docker.docker_container:
+    name: gitea-db
+    image: postgres:15
+    state: started
+    networks:
+      - name: gitea-network
+    env:
+      POSTGRES_USER: gitea
+      POSTGRES_PASSWORD: "{{ gitea_db_password | default('gitea') }}"
+      POSTGRES_DB: gitea
+    volumes:
+      - /var/lib/gitea/postgres:/var/lib/postgresql/data
+    restart_policy: unless-stopped
+
+- name: Wait for Gitea database to be ready
+  ansible.builtin.wait_for:
+    timeout: 30
+    host: "127.0.0.1"
+    port: 5432
+
+- name: Start Gitea container
+  community.docker.docker_container:
+    name: gitea
+    image: gitea/gitea:latest
+    state: started
+    networks:
+      - name: gitea-network
+    ports:
+      - "3000:3000"
+      - "2222:22"
+    env:
+      ROOT_URL: "http://{{ ansible_default_ipv4.address }}:3000/"
+      DB_TYPE: postgres
+      DB_HOST: gitea-db:5432
+      DB_NAME: gitea
+      DB_USER: gitea
+      DB_PASSWD: "{{ gitea_db_password | default('gitea') }}"
+    volumes:
+      - /var/lib/gitea:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    restart_policy: unless-stopped
+    dependencies:
+      - gitea-db

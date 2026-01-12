@@ -1,0 +1,15 @@
+---
+- name: Homelab PaaS Base Setup
+  hosts: localhost
+  become: true
+  gather_facts: true
+
+  roles:
+    - base
+    - tk
+    - opencode
+    - docker
+    - postgresql
+    - gitea
+    - monitoring
+    - dashboard

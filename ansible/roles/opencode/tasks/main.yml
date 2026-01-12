@@ -1,0 +1,13 @@
+---
+- name: Create bin directory
+  ansible.builtin.file:
+    path: /usr/local/bin
+    state: directory
+    mode: '0755'
+
+- name: Install opencode
+  ansible.builtin.shell: |
+    if [ ! -f /usr/local/bin/opencode ]; then
+      curl -fsSL https://opencode.ai/install | OPENCODE_INSTALL_DIR=/usr/local/bin bash
+    fi
+    creates=/usr/local/bin/opencode

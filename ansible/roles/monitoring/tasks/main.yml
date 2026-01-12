@@ -1,0 +1,87 @@
+---
+- name: Create monitoring user
+  ansible.builtin.user:
+    name: monitoring
+    system: true
+    shell: /sbin/nologin
+
+- name: Create monitoring directory
+  ansible.builtin.file:
+    path: /opt/monitoring
+    state: directory
+    owner: monitoring
+    group: monitoring
+    mode: '0755'
+
+- name: Install Flask
+  ansible.builtin.pip:
+    name: flask
+    executable: pip3
+
+- name: Create monitoring API service file
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/monitoring.service
+    content: |
+      [Unit]
+      Description=Monitoring API Service
+      After=network.target
+
+      [Service]
+      Type=simple
+      User=monitoring
+      WorkingDirectory=/opt/monitoring
+      ExecStart=/usr/bin/python3 /opt/monitoring/api.py
+      Restart=always
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Create monitoring API
+  ansible.builtin.copy:
+    dest: /opt/monitoring/api.py
+    content: |
+      #!/usr/bin/env python3
+      """
+      Monitoring API Service
+      Provides metrics and logs endpoints for the Homelab PaaS.
+      """
+      from flask import Flask, jsonify
+      import psutil
+      import os
+
+      app = Flask(__name__)
+
+      @app.route('/health')
+      def health():
+          return jsonify({'status': 'healthy'})
+
+      @app.route('/metrics')
+      def metrics():
+          return jsonify({
+              'cpu_percent': psutil.cpu_percent(interval=1),
+              'memory_percent': psutil.virtual_memory().percent,
+              'disk_usage': psutil.disk_usage('/').percent,
+              'load_avg': os.getloadavg()
+          })
+
+      @app.route('/logs')
+      def logs():
+          return jsonify({'logs': []})
+
+      @app.route('/gpu')
+      def gpu():
+          return jsonify({'available': False})
+
+      if __name__ == '__main__':
+          app.run(host='0.0.0.0', port=5000)
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Start and enable monitoring service
+  ansible.builtin.service:
+    name: monitoring
+    state: started
+    enabled: true

@@ -1,0 +1,64 @@
+---
+- name: Install essential packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - git
+      - vim
+      - htop
+      - tree
+      - unzip
+      - ca-certificates
+      - gnupg
+      - lsb-release
+    state: present
+
+- name: Configure MOTD
+  ansible.builtin.copy:
+    dest: /etc/motd
+    content: |
+      Welcome to Your Learning PaaS Container
+
+      Dashboard: http://{{ ansible_default_ipv4.address }}:8080
+      Gitea: http://{{ ansible_default_ipv4.address }}:3000
+      Monitoring: http://{{ ansible_default_ipv4.address }}:5000
+
+      System Status:
+        CPU: {{ ansible_processor_vcpus }} vCPUs
+        Memory: {{ (ansible_memtotal_mb / 1024) | round(1) }} GB
+        Disk: {{ ansible_mounts[0].size_total // (1024**3) }} GB
+
+      Customization:
+        Run 'opencode' to customize this system
+
+      Quick Links:
+        - Create experiment: Dashboard → Experiments → New
+        - Manage services: Dashboard → Services
+        - View logs: Dashboard → Monitoring
+
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Configure timezone
+  community.general.timezone:
+    name: "{{ timezone | default('UTC') }}"
+
+- name: Install and configure SSH
+  ansible.builtin.apt:
+    name: openssh-server
+    state: present
+
+- name: Enable SSH service
+  ansible.builtin.service:
+    name: ssh
+    state: started
+    enabled: true
+
+- name: Configure SSH to use LAN IP in MOTD
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PrintMotd'
+    line: 'PrintMotd no'
+    state: present
