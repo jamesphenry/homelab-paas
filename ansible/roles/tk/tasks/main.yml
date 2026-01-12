@@ -9,7 +9,7 @@
   ansible.builtin.git:
     repo: https://github.com/wedow/ticket.git
     dest: /opt/ticket
-    version: main
+    version: master
     update: no
 
 - name: Create tk symlink
