@@ -35,12 +35,18 @@
   community.postgresql.postgresql_db:
     db: homelab_paas
     login_user: postgres
+    login_password: postgres
     state: present
+  become: yes
+  become_user: postgres
 
 - name: Create dashboard user
   community.postgresql.postgresql_user:
     name: dashboard
     password: "{{ dashboard_db_password | default('dashboard123') }}"
     login_user: postgres
+    login_password: postgres
     state: present
     role_attr_flags: LOGIN
+  become: yes
+  become_user: postgres
