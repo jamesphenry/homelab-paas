@@ -32,21 +32,12 @@
     enabled: true
 
 - name: Create homelab_paas database
-  community.postgresql.postgresql_db:
-    db: homelab_paas
-    login_user: postgres
-    login_password: postgres
-    state: present
-  become: yes
-  become_user: postgres
+  ansible.builtin.shell: |
+    su - postgres -c "psql -c 'CREATE DATABASE homelab_paas;'"
+  ignore_errors: true
 
 - name: Create dashboard user
-  community.postgresql.postgresql_user:
-    name: dashboard
-    password: "{{ dashboard_db_password | default('dashboard123') }}"
-    login_user: postgres
-    login_password: postgres
-    state: present
-    role_attr_flags: LOGIN
-  become: yes
-  become_user: postgres
+  ansible.builtin.shell: |
+    su - postgres -c "psql -c \"CREATE USER dashboard WITH PASSWORD 'dashboard123';\""
+    su - postgres -c "psql -c 'GRANT ALL PRIVILEGES ON DATABASE homelab_paas TO dashboard;'"
+  ignore_errors: true
