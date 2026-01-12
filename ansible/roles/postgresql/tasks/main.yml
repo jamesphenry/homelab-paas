@@ -4,6 +4,11 @@
     name: postgresql
     state: present
 
+- name: Install psycopg2 for Ansible
+  ansible.builtin.apt:
+    name: python3-psycopg2
+    state: present
+
 - name: Ensure PostgreSQL data directory exists
   ansible.builtin.file:
     path: /var/lib/postgresql
